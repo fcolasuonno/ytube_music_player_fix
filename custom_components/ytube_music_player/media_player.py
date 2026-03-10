@@ -38,8 +38,6 @@ from .const import *
 ################### Temp FIX remove me! ###############################
 import pytubefix, re
 
-# IPv4-only patch removed - not needed, urllib3 handles IPv6 fallback automatically
-
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -1419,13 +1417,15 @@ class yTubeMusicComponent(MediaPlayerEntity):
 			ATTR_MEDIA_CONTENT_TYPE: MediaType.MUSIC,
 			ATTR_ENTITY_ID: self._remote_player,
 			"extra": {
-				# pychromecast quick_play for default_media_receiver requires metadata
-				# as a nested dict - flat keys get passed as kwargs to play_media() and fail
 				"metadata": {
-					"metadataType": 3,  # MusicTrackMediaMetadata
+					"metadataType": 3,
 					"title": self._track_name,
 					"artist": self._track_artist,
-					"images": [{"url": self._track_album_cover}]
+					"images": [
+						{
+							"url": self._track_album_cover,
+						}
+					]
 				}
 			}
 		}
