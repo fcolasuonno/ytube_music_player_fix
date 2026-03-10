@@ -38,94 +38,7 @@ from .const import *
 ################### Temp FIX remove me! ###############################
 import pytubefix, re
 
-################### IPv4-only fix ###############################
-# IPv6 is not routed in this Docker container.
-# Patch socket.create_connection (used by urllib/http.client) AND
-# urllib3.util.connection.create_connection (used by requests/ytmusicapi)
-# to only ever try AF_INET addresses.
-import socket as _socket
-
-_YTUBE_IPV4_DOMAINS = (
-    'youtube.com', 'googlevideo.com', 'ytimg.com', 'ggpht.com', 'music.youtube.com',
-)
-
-_orig_getaddrinfo = _socket.getaddrinfo
-def _ipv4_only_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
-    if host and any(d in host for d in _YTUBE_IPV4_DOMAINS):
-        return _orig_getaddrinfo(host, port, _socket.AF_INET, type, proto, flags)
-    return _orig_getaddrinfo(host, port, family, type, proto, flags)
-_socket.getaddrinfo = _ipv4_only_getaddrinfo
-
-# Patch socket.create_connection - this is what http.client/urllib calls directly
-_orig_create_connection = _socket.create_connection
-def _ipv4_create_connection(address, timeout=_socket._GLOBAL_DEFAULT_TIMEOUT, source_address=None):
-    host, port = address
-    if not host or not any(d in host for d in _YTUBE_IPV4_DOMAINS):
-        return _orig_create_connection(address, timeout=timeout, source_address=source_address)
-    err = None
-    for res in _orig_getaddrinfo(host, port, _socket.AF_INET, _socket.SOCK_STREAM):
-        af, socktype, proto, canonname, sa = res
-        sock = None
-        try:
-            sock = _socket.socket(af, socktype, proto)
-            if timeout is not _socket._GLOBAL_DEFAULT_TIMEOUT:
-                sock.settimeout(timeout)
-            if source_address:
-                sock.bind(source_address)
-            sock.connect(sa)
-            return sock
-        except _socket.error as e:
-            err = e
-            if sock is not None:
-                sock.close()
-    if err is not None:
-        raise err
-    raise _socket.error(f"No IPv4 address found for {host}")
-_socket.create_connection = _ipv4_create_connection
-
-# Patch urllib3 as well (used by requests/ytmusicapi)
-# SCOPED: only force IPv4 for YouTube/Google Video domains to avoid
-# breaking other HA integrations (Nest, Ring, etc.) that use urllib3 too.
-try:
-    import urllib3.util.connection as _urllib3_conn
-    _YTUBE_IPV4_DOMAINS = (
-        'youtube.com', 'googlevideo.com', 'ytimg.com', 'ggpht.com',
-        'ytmusicapi', 'music.youtube.com',
-    )
-    _orig_urllib3_create = _urllib3_conn.create_connection
-    def _ipv4_urllib3_create(address, timeout=_socket._GLOBAL_DEFAULT_TIMEOUT,
-                              source_address=None, socket_options=None):
-        host, port = address
-        # Only force IPv4 for YouTube-related domains
-        force_ipv4 = any(d in host for d in _YTUBE_IPV4_DOMAINS)
-        if not force_ipv4:
-            return _orig_urllib3_create(address, timeout=timeout,
-                                        source_address=source_address,
-                                        socket_options=socket_options)
-        err = None
-        for res in _orig_getaddrinfo(host, port, _socket.AF_INET, _socket.SOCK_STREAM):
-            af, socktype, proto, canonname, sa = res
-            sock = None
-            try:
-                sock = _socket.socket(af, socktype, proto)
-                if socket_options:
-                    for opt in socket_options:
-                        sock.setsockopt(*opt)
-                if timeout is not _socket._GLOBAL_DEFAULT_TIMEOUT:
-                    sock.settimeout(timeout)
-                if source_address:
-                    sock.bind(source_address)
-                sock.connect(sa)
-                return sock
-            except _socket.error as e:
-                err = e
-                if sock is not None:
-                    sock.close()
-        raise err or _socket.error(f"No IPv4 address found for {host}")
-    _urllib3_conn.create_connection = _ipv4_urllib3_create
-except Exception:
-    pass
-################### IPv4-only fix end ###########################
+# IPv4-only patch removed - not needed, urllib3 handles IPv6 fallback automatically
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -1788,9 +1701,22 @@ class yTubeMusicComponent(MediaPlayerEntity):
 					self._tracks = await self.hass.async_add_executor_job(lambda: self._api.get_library_songs(limit=self._trackLimit))
 					self._attributes['current_playlist_title'] = ALL_LIB_TRACKS_TITLE
 				else:
-					playlist_info = await self.hass.async_add_executor_job(lambda: self._api.get_playlist(media_id, limit=self._trackLimit))
-					self._tracks = playlist_info['tracks'][:self._trackLimit]  # limit function doesn't really work ... seems like
-					self._attributes['current_playlist_title'] = str(playlist_info['title'])
+					try:
+						playlist_info = await self.hass.async_add_executor_job(lambda: self._api.get_playlist(media_id, limit=self._trackLimit))
+						self._tracks = playlist_info['tracks'][:self._trackLimit]
+						self._attributes['current_playlist_title'] = str(playlist_info['title'])
+					except KeyError as e:
+						# ytmusicapi fails to parse certain playlists (e.g. auto-generated VL* playlists
+						# or playlists with noindex:True) when YouTube changes their response structure.
+						# Fall back to get_watch_playlist which uses a different API endpoint.
+						self.log_me('error', f"get_playlist failed with KeyError {e} for {media_id}, trying get_watch_playlist fallback")
+						try:
+							watch_info = await self.hass.async_add_executor_job(lambda: self._api.get_watch_playlist(playlistId=media_id, limit=self._trackLimit))
+							self._tracks = watch_info.get('tracks', [])[:self._trackLimit]
+							self._attributes['current_playlist_title'] = str(media_id)
+						except Exception as e2:
+							self.log_me('error', f"get_watch_playlist fallback also failed: {e2}")
+							raise
 			elif(media_type == MediaType.ALBUM):
 				crash_extra = 'get_album(browseId=' + str(media_id) + ')'
 				if media_id[:7] == "OLAK5uy": #Sharing over Android app sends 'bad' album id. Checking and converting.
