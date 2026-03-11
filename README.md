@@ -26,9 +26,9 @@ If you like what I've done and you want to help: buy me a coffee/beer. Thanks!
 
 # Overview / Step - by - step guide
 
-1. Initial setup: [Videotutorial](https://www.youtube.com/watch?v=_UQv7fc3h5s)
+1. Initial Setup: Follow the instructions below to get started. OAuth is no longer supported.
 - (required) install the component via HACS [see Installation](#installation-via-hacs)
-- (required) configure the component via config flow, see details for the [see Setup](#setup)
+- (required) configure the component via config flow, see details for the [see Setup: Follow the instructions below to get started. OAuth is no longer supported.
 
 you can now use it via the media browser and the default mediaplayer card, but please read on ... 
 
@@ -47,55 +47,6 @@ Please install this custom component via [HACS](https://hacs.xyz/docs/installati
 
 Once you've installed HACS follow this [Guide](https://codingcyclist.medium.com/how-to-install-any-custom-component-from-github-in-less-than-5-minutes-ad84e6dc56ff) and install the yTube_music_player from the default HACS repository.
 
-# Setup
-Go to Settings -> Devices -> "Add integration" -> "YouTube Music Player"
-   If the integration didn't show up in the list please REFRESH the page
-
-For the installation you need an Oauth token from google. Here is how you create it:
-
-Open the provided link during the config flow. if this is the first time you use a google developer account you won't have project. So click "create project" in the upper right corner
-<img width="2864" height="1069" alt="Image" src="https://github.com/user-attachments/assets/d63cf24c-586f-4068-ba4b-382b60ac8d2d" />
-
-call it what ever you want .. it is just visible for you
-<img width="2864" height="1069" alt="Image" src="https://github.com/user-attachments/assets/ce4683cb-2ef6-4144-b19f-763aa668d68f" />
-
-once created you need to cofigure the consent screen, again in the upper right corner
-<img width="2864" height="1069" alt="Image" src="https://github.com/user-attachments/assets/2251ddc2-d549-4349-8524-225647c3b6d2" />
-
-click get-started and follow the process
-<img width="2864" height="1328" alt="Image" src="https://github.com/user-attachments/assets/657f6d3d-1650-43f7-ab5a-71ff96e5835d" />
-
-again .. names won't matter
-<img width="2864" height="1328" alt="Image" src="https://github.com/user-attachments/assets/6015ad6e-6e08-4513-add5-a693900e1e1e" />
-
-likely you will also be able to have an external project
-<img width="2864" height="1328" alt="Image" src="https://github.com/user-attachments/assets/22db2918-9145-4950-82f7-3e453885bec7" />
-
-done
-<img width="2864" height="1328" alt="Image" src="https://github.com/user-attachments/assets/1b42d487-0678-4872-a103-bbc494c93aa9" />
-
-now you can create the oauth data
-<img width="2864" height="1328" alt="Image" src="https://github.com/user-attachments/assets/8e171d77-adc5-42b6-be04-f60faac9c549" />
-
-click create client
-<img width="2864" height="1328" alt="Image" src="https://github.com/user-attachments/assets/5b9f05ae-5e76-493e-9f76-a6b3ac3e0234" />
-
-select TV
-<img width="2864" height="1328" alt="Image" src="https://github.com/user-attachments/assets/1313b4fc-4301-4a8b-b69a-3f0904f07da8" />
-
-again .. names don't matter .. note down the data from the next screenshot .. those are the data that you need for homeassistant in a second but keep following the process here or you will end up with an error
-<img width="2864" height="1328" alt="Image" src="https://github.com/user-attachments/assets/c43d3eed-c67f-4147-94dd-9c8bd5eb797c" />
-
-go to audiance and add a testuser -> add user
-<img width="2864" height="1328" alt="Image" src="https://github.com/user-attachments/assets/12a65dfd-79c9-4a9e-8634-85ca43b36439" />
-
-add your googleaccount
-<img width="2864" height="1328" alt="Image" src="https://github.com/user-attachments/assets/16aa1785-34ad-41b9-9154-4c45896a8212" />
-
-make sure that it is listed ... 
-<img width="2864" height="1328" alt="Image" src="https://github.com/user-attachments/assets/ca814f86-acd1-4829-ae4a-223a15869393" />
-
-now you can continue with the oauth data in the next step in homeassistant
 
 ## Installation went fine, what now?
 At this point you should have a new entity called `media_player.ytube_music_player` (or similar if you've changed the name). Open the media_browser, make sure this new media_player is selected (lower right corner). You'll see an overview of differnt types like playlists / albums etc. Go, open a section and click play on one of those items.
@@ -208,7 +159,7 @@ Go to the 'options' dialog (configflow) and choose the dropdowns you want to use
 
 The player attributes contain addition informations, like the playlist and if available the lyrics of the track
 ![lyrics](lyrics.png)
-The yaml setup is available at [package/markdown.yaml](https://github.com/KoljaWindeler/ytube_music_player/blob/main/package/markdown.yaml)
+The yaml Setup: Follow the instructions below to get started. OAuth is no longer supported.
 
 ## Automations
 Play my **favorite** playlist in **random** mode on my **kitchen** speaker (kuche)
@@ -293,7 +244,7 @@ The easiest way it to provide your www folder. Be aware: If you're using a docke
 So for most users the path will be `/config/www`
 2) `proxy_url` | The path will be send to your Sonos speaker. So typically this should be something like `http://192.168.1.xxx:8123/local`. Please note that https will only work if you have a valid ssl-certificat, otherwise the Sonos will not connect. 
 
-You can also use a dedicated server, if you don't want to use homeassistant as http server, or you have some special SSL setup.
+You can also use a dedicated server, if you don't want to use homeassistant as http server, or you have some special SSL Setup: Follow the instructions below to get started. OAuth is no longer supported.
 If you're running docker anyway you could try `docker run --restart=always --name nginx-ytube-proxy -p 8080:80 -v /config/www:/usr/share/nginx/html:ro -d nginx`
 This will spin up server on port 8080 that serves `/config/www` so your `proxy_url` would have to be `http://192.168.1.xxx:8080`.
 
